@@ -18,12 +18,13 @@ bits = randi([0, 1], 1, nbits); % Génération de l’information binaire
 
 %% Filtres
 h = rcosdesign(rolloff, span, Ns); % Génération de la réponse impulsionnelle du filtre de mise en forme
+% h = ones(1, Ns); % Filtre de mise en forme
 hr = fliplr(h); % Génération de la réponse impulsionnelle du filtre de réception (filtrage adaptée)
 
 %% Mapping PSK
 b = reshape(bits, log2(M), length(bits) / log2(M)); % Groupement des bits par paquets de log2(M) bits
 b = bit2int(b,log2(M)); % Conversion des bits groupés en entiers
-symboles = b';
+symboles = b;
 
 switch M % Mapping des bits sur les symboles
     case 2
@@ -45,9 +46,7 @@ switch M % Mapping des bits sur les symboles
         symboles(b == 7) = exp(-5i * pi / 8);
 end
 
-
-
-diracs = kron(symboles', [1, zeros(1, Ns - 1)]); % Sur échantillonnage (génération de la suite de Diracs pondérés par les symboles)
+diracs = kron(symboles, eye(1, Ns)); % Sur échantillonnage (génération de la suite de Diracs pondérés par les symboles)
 xe = filter(h, 1, diracs); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
 t = 0:Te:(length(xe) - 1) * Te;
 x = real(xe .* exp(1i * 2 * pi * fp * t));
@@ -66,6 +65,7 @@ ylabel("Amplitude");
 title("Voie en quadrature du signal")
 
 figure("Name", "Signal transmis");
+
 plot(t, x);
 xlabel("Temps (s)");
 ylabel("Amplitude");
@@ -80,15 +80,11 @@ title("DSP du signal transmis");
 % mettre sur porteuse décale le spectre initialisement modulé en bande de base
 % cf formule cours ( 1/4 * (S(-f-fp) + (S(f-fp)))
 
-figure("Name","Diagramme de l'oeil du signal en sortie")
-plot(reshape(x,Ns,length(x)/Ns))
-xlabel('Temps (s)')
-
 %% Canal awng
-Px = mean(abs(x) .^ 2); % Calcul de la puissance du signal transmis
-Pn = Px * Ns / (2 * log2(M) * 10 ^ (EbN0dB / 10)); % Calcul de la puissance du bruite à introduire pour travailler au niveau de Eb N0 souhaité
-n = sqrt(Pn) * randn(1, length(x)); % Génération du bruit
-r = x + n; % Ajout du bruit
+% Px = mean(abs(x) .^ 2); % Calcul de la puissance du signal transmis
+% Pn = Px * Ns / (2 * log2(M) * 10 ^ (EbN0dB / 10)); % Calcul de la puissance du bruite à introduire pour travailler au niveau de Eb N0 souhaité
+% n = sqrt(Pn) * randn(1, length(x)); % Génération du bruit
+% r = x + n; % Ajout du bruit
 
 %% Réception
 % z = filter(hr, 1, r .* cos(2 * pi * fp * [0:Te:(length(r) - 1) * Te])); % Retour en bande de base avec filtrage passe-bas = filtre adapté
@@ -102,7 +98,7 @@ r = x + n; % Ajout du bruit
 % WN = [(fp - BW/2) (fp + BW/2)]/(Fe/2);
 % h_pc = fir1(N, WN, 'bandpass');
 % z = filter(h_pc, 1, r); % Retour en bande de base avec filtrage passe-bas = filtre adapté
-z = r; % tkt on est seul au monde
+z = x; % tkt on est seul au monde
 
 % Multiplication par cosinus / sinus
 z_cos = z .* cos(2*pi*fp*t);
@@ -116,14 +112,42 @@ h_pb = fir1(N, BW / (Fe / 2), "low"); % Filtre passe-bas
 z_cos = filter(h_pb, 1, z_cos);
 z_sin = filter(h_pb, 1, z_sin);
 
+
 % Combinaison des deux voies
-z_f = z_cos + 1i * z_sin;
+z_f = z_cos - 1i * z_sin;
+
 y = filter(hr, 1, z_f);
+
+figure("Name","signal recu")
+tiledlayout(2,1)
+nexttile
+plot(t, real(y));
+xlabel("Temps (s)");
+ylabel("Amplitude");
+title("Voie en phase du signal")
+nexttile
+plot(t, imag(y));
+xlabel("Temps (s)");
+ylabel("Amplitude");
+title("Voie en quadrature du signal")
+
+figure("Name","Diagramme de l'oeil du signal en sortie réel")
+tiledlayout(2,1)
+nexttile
+plot(reshape(real(y),Ns,length(y)/Ns));
+xlabel("Temps (s)");
+ylabel("Amplitude");
+title("Voie en phase du signal")
+nexttile
+plot(reshape(imag(y),Ns,length(y)/Ns));
+xlabel("Temps (s)");
+ylabel("Amplitude");
+title("Voie en quadrature du signal")
 
 % échantillonage
 N0 = Ns; 
 echantilloned = y(N0:Ns:length(y));
-plot(echantilloned, 'o');
+% plot(echantilloned, 'o');
 detected = zeros(length(echantilloned), 1);
 switch M
     case 2
@@ -146,11 +170,12 @@ switch M
 end
 
 % demapping
-demapped = int2bit(demapped, 2);
+bits_recu = int2bit(detected, 2);
 demapped = reshape(demapped, 1, nbits);
+% plot(demapped, "o");
 
 
-% TEB = length(find((bm - bits) ~= 0)) / length(bits); % Calcul du TEBz = filter(hr, 1, r .* cos(2 * pi * fp * [0:Te:(length(r) - 1) * Te])); % Retour en bande de base avec filtrage passe-bas = filtre adapté
+TEB = mean(bits ~= demapped) % Calcul du TEBz = filter(hr, 1, r .* cos(2 * pi * fp * [0:Te:(length(r) - 1) * Te])); % Retour en bande de base avec filtrage passe-bas = filtre adapté
 % n0 = Ns; % Choix de l’instant d’échantillonnage.
 % zm = z(n0:Ns:end); % Echantillonnage à n0+mNs
 % am = sign(real(zm)); % Décisions sur les symboles
