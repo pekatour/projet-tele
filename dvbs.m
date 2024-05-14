@@ -48,10 +48,9 @@ switch M % Mapping des bits sur les symboles
 end
 
 % extending signal
-symboles = [symboles zeros(1, 2 * span)];
 
 diracs = kron(symboles, [1 zeros(1,Ns-1)]); % Suréchantillonnage des symboles
-xe = filter(h, 1, diracs); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
+xe = filter(h, 1, [diracs zeros(1, length(h))]); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
 t = 0:Te:(length(xe) - 1) * Te;
 x = real(xe .* exp(1i * 2 * pi * fp * t));
 
@@ -117,24 +116,24 @@ z_sin = lowpass(z_sin, BW, Fe);
 z_f = z_cos - 1i * z_sin;
 y = filter(hr, 1, z_f);
 
-figure("Name", "Diagramme de l'oeil du signal en sortie")
-tiledlayout(2, 1)
-nexttile
-plot(reshape(real(y), Ns, length(y) / Ns));
-xlabel("Nb échantillons (s)");
-ylabel("Amplitude");
-title("Voie en phase du signal")
-nexttile
-plot(reshape(imag(y), Ns, length(y) / Ns));
-xlabel("Nb échantillons (s)");
-ylabel("Amplitude");
-title("Voie en quadrature du signal")
+% figure("Name", "Diagramme de l'oeil du signal en sortie")
+% tiledlayout(2, 1)
+% nexttile
+% plot(reshape(real(y), Ns, length(y((1+length(h)):end)) / Ns));
+% xlabel("Nb échantillons (s)");
+% ylabel("Amplitude");
+% title("Voie en phase du signal")
+% nexttile
+% plot(reshape(imag(y), Ns, length(y) / Ns));
+% xlabel("Nb échantillons (s)");
+% ylabel("Amplitude");
+% title("Voie en quadrature du signal")
 
 
 plot(real(y(2*span : end)))
 % échantillonage
-N0 = 2 * span + 1 + Ns;
-echantilloned = y(N0:Ns:nbits * Ns + N0 - 1);
+N0 = 1 + length(h);
+echantilloned = y(N0:Ns:length(y));
 figure("Name", "position des échantillons");
 plot(echantilloned, 'o');
 detected = zeros(length(echantilloned), 1);
