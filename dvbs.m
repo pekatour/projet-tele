@@ -1,3 +1,5 @@
+% @TODO: Decaler en fonction du decalage induit par le filtre rcosdesign
+
 close all; clc;
 
 %% Paramètres
@@ -12,18 +14,17 @@ Ns = Fe / Rs; % Facteur de sur échantillonnage
 nbits = 100 * log2(M); % Nombre de bits à transmettre
 
 rolloff = 0.35; % Roll-off du filtre de mise en forme
-span = 10; % Durée du filtre en symboles de base
+span = 20; % Durée du filtre en symboles de base
 
 bits = randi([0, 1], 1, nbits); % Génération de l’information binaire
 
 %% Filtres
 h = rcosdesign(rolloff, span, Ns); % Génération de la réponse impulsionnelle du filtre de mise en forme
-% h = ones(1, Ns); % Filtre de mise en forme
 hr = fliplr(h); % Génération de la réponse impulsionnelle du filtre de réception (filtrage adaptée)
 
 %% Mapping PSK
 b = reshape(bits, log2(M), length(bits) / log2(M)); % Groupement des bits par paquets de log2(M) bits
-b = bit2int(b,log2(M)); % Conversion des bits groupés en entiers
+b = bit2int(b, log2(M)); % Conversion des bits groupés en entiers
 symboles = b;
 
 switch M % Mapping des bits sur les symboles
@@ -31,7 +32,7 @@ switch M % Mapping des bits sur les symboles
         symboles(b == 0) = 1;
         symboles(b == 1) = -1;
     case 4
-        symboles(b == 0) = 1 + 1i; 
+        symboles(b == 0) = 1 + 1i;
         symboles(b == 1) = -1 + 1i;
         symboles(b == 2) = 1 - 1i;
         symboles(b == 3) = -1 - 1i;
@@ -46,13 +47,16 @@ switch M % Mapping des bits sur les symboles
         symboles(b == 7) = exp(-5i * pi / 8);
 end
 
-diracs = kron(symboles, eye(1, Ns)); % Sur échantillonnage (génération de la suite de Diracs pondérés par les symboles)
+% extending signal
+symboles = [symboles zeros(1, 2 * span)];
+
+diracs = kron(symboles, [1 zeros(1,Ns-1)]); % Suréchantillonnage des symboles
 xe = filter(h, 1, diracs); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
 t = 0:Te:(length(xe) - 1) * Te;
 x = real(xe .* exp(1i * 2 * pi * fp * t));
 
 % Affichage des voies en phase et quadrature
-tiledlayout(2,1)
+tiledlayout(2, 1)
 nexttile
 plot(t, real(xe));
 xlabel("Temps (s)");
@@ -65,7 +69,6 @@ ylabel("Amplitude");
 title("Voie en quadrature du signal")
 
 figure("Name", "Signal transmis");
-
 plot(t, x);
 xlabel("Temps (s)");
 ylabel("Amplitude");
@@ -101,63 +104,50 @@ title("DSP du signal transmis");
 z = x; % tkt on est seul au monde
 
 % Multiplication par cosinus / sinus
-z_cos = z .* cos(2*pi*fp*t);
-z_sin = z .* sin(2*pi*fp*t);
+z_cos = z .* cos(2 * pi * fp * t);
+z_sin = z .* sin(2 * pi * fp * t);
 
 % Filtrage passe-bas
-BW = 1.5 * fp;
-N = 101;
-h_pb = fir1(N, BW / (Fe / 2), "low"); % Filtre passe-bas
+BW = 1 * fp;
 
-z_cos = filter(h_pb, 1, z_cos);
-z_sin = filter(h_pb, 1, z_sin);
-
+z_cos = lowpass(z_cos, BW, Fe);
+z_sin = lowpass(z_sin, BW, Fe);
 
 % Combinaison des deux voies
 z_f = z_cos - 1i * z_sin;
-
 y = filter(hr, 1, z_f);
 
-figure("Name","signal recu")
-tiledlayout(2,1)
+figure("Name", "Diagramme de l'oeil du signal en sortie")
+tiledlayout(2, 1)
 nexttile
-plot(t, real(y));
-xlabel("Temps (s)");
+plot(reshape(real(y), Ns, length(y) / Ns));
+xlabel("Nb échantillons (s)");
 ylabel("Amplitude");
 title("Voie en phase du signal")
 nexttile
-plot(t, imag(y));
-xlabel("Temps (s)");
+plot(reshape(imag(y), Ns, length(y) / Ns));
+xlabel("Nb échantillons (s)");
 ylabel("Amplitude");
 title("Voie en quadrature du signal")
 
-figure("Name","Diagramme de l'oeil du signal en sortie réel")
-tiledlayout(2,1)
-nexttile
-plot(reshape(real(y),Ns,length(y)/Ns));
-xlabel("Temps (s)");
-ylabel("Amplitude");
-title("Voie en phase du signal")
-nexttile
-plot(reshape(imag(y),Ns,length(y)/Ns));
-xlabel("Temps (s)");
-ylabel("Amplitude");
-title("Voie en quadrature du signal")
 
+plot(real(y(2*span : end)))
 % échantillonage
-N0 = Ns; 
-echantilloned = y(N0:Ns:length(y));
-% plot(echantilloned, 'o');
+N0 = 2 * span + 1 + Ns;
+echantilloned = y(N0:Ns:nbits * Ns + N0 - 1);
+figure("Name", "position des échantillons");
+plot(echantilloned, 'o');
 detected = zeros(length(echantilloned), 1);
+
 switch M
     case 2
         detected(real(echantilloned) > 0) = 1;
         detected(real(echantilloned) > 0) = -1;
     case 4
-        detected(real(echantilloned) > 0 & imag(echantilloned) > 0) = 3;
+        detected(real(echantilloned) > 0 & imag(echantilloned) > 0) = 0;
         detected(real(echantilloned) > 0 & imag(echantilloned) <= 0) = 2;
         detected(real(echantilloned) <= 0 & imag(echantilloned) > 0) = 1;
-        detected(real(echantilloned) <= 0 & imag(echantilloned) <= 0) = 0;
+        detected(real(echantilloned) <= 0 & imag(echantilloned) <= 0) = 3;
     case 8
         detected(angle(echantilloned) > 0 & angle(echantilloned) <= pi / 4) = 0;
         detected(angle(echantilloned) > pi / 4 & angle(echantilloned) <= pi / 2) = 1;
@@ -170,12 +160,11 @@ switch M
 end
 
 % demapping
-bits_recu = int2bit(detected, 2);
-demapped = reshape(demapped, 1, nbits);
-% plot(demapped, "o");
+demapped = int2bit(detected, log2(M));
+demapped = reshape(demapped, 1, length(demapped));
+TEB = mean(bits ~= demapped)
 
-
-TEB = mean(bits ~= demapped) % Calcul du TEBz = filter(hr, 1, r .* cos(2 * pi * fp * [0:Te:(length(r) - 1) * Te])); % Retour en bande de base avec filtrage passe-bas = filtre adapté
+% TEB = length(find((bm - bits) ~= 0)) / length(bits); % Calcul du TEBz = filter(hr, 1, r .* cos(2 * pi * fp * [0:Te:(length(r) - 1) * Te])); % Retour en bande de base avec filtrage passe-bas = filtre adapté
 % n0 = Ns; % Choix de l’instant d’échantillonnage.
 % zm = z(n0:Ns:end); % Echantillonnage à n0+mNs
 % am = sign(real(zm)); % Décisions sur les symboles
