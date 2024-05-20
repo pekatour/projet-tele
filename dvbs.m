@@ -68,8 +68,6 @@ y = filter(hr, 1, z_f);
 % échantillonage
 N0 = 1 + length(h); % Instant d'échantillonage
 echantilloned = y(N0:Ns:length(y));
-figure("Name", "position des échantillons");
-plot(echantilloned, 'o');
 
 % Décisions
 detected = decisionsPSK(echantilloned, M);
@@ -110,6 +108,14 @@ title("DSP du signal transmis");
 % Spectre avec deux bandes centrées en +fp et -fp, cohérent avec la théorie :
 % mettre sur porteuse décale le spectre initialisement modulé en bande de base
 % cf formule cours ( 1/4 * (S(-f-fp) + (S(f-fp)))
+
+% Constellations en sortie de mapping et en sortie de l'échantilloneur
+figure("Name", "Position des échantillons");
+plot(symboles, 'o', "MarkerFaceColor", [0.7 0 1]);
+hold on
+plot(echantilloned, 'o', "MarkerFaceColor", [0 0.7 0.7]);
+hold off
+legend('Après mapping','Après échantillonage')
 
 % figure("Name", "Diagramme de l'oeil du signal en sortie")
 % tiledlayout(2, 1)
