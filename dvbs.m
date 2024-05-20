@@ -26,6 +26,7 @@ symboles = mappingPSK(bits,M);
 diracs = kron(symboles, [1 zeros(1,Ns-1)]); % Suréchantillonnage des symboles
 xe = filter(h, 1, [diracs zeros(1, length(h))]); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
 t = 0:Te:(length(xe) - 1) * Te;
+Be = ((1+rolloff)/2)*Rs;
 x = real(xe .* exp(1i * 2 * pi * fp * t));
 
 
@@ -33,10 +34,14 @@ TEB_xp = zeros(1,6);
 TEB_th = zeros(1,6);
 for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     %% Canal awng
+    % Filtrage passe-bande
+    xc = bandpass(x,[fp-Be, fp+Be],Fe);
+
+    % Ajout bruit
     Px = mean(abs(x) .^ 2); % Calcul de la puissance du signal transmis
-    Pn = Px * Ns / (2 * log2(M) * 10 ^ (EbN0dB / 10)); % Calcul de la puissance du bruite à introduire pour travailler au niveau de Eb N0 souhaité
-    n = sqrt(Pn) * randn(1, length(x)); % Génération du bruit
-    r = x + n; % Ajout du bruit
+    Pn = Px * Ns / (2 * log2(M) * 10 ^ (EbN0dB / 10)); % Calcul de la puissance du bruit à introduire pour travailler au niveau de Eb N0 souhaité
+    n = sqrt(Pn) * randn(1, length(xc)); % Génération du bruit
+    r = xc + n; % Ajout du bruit
 
     %% Retour en bande de base
     % z = filter(hr, 1, r .* cos(2 * pi * fp * [0:Te:(length(r) - 1) * Te])); % Retour en bande de base avec filtrage passe-bas = filtre adapté
@@ -80,7 +85,14 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     demapped = reshape(demapped, 1, length(demapped));
     TEB_xp(EbN0dB+1) = mean(bits ~= demapped);
     % TEB_xp(EbN0dB+1)
-    TEB_th(EbN0dB+1) = qfunc(sqrt(2 * 10 ^ (EbN0dB / 10)));
+    switch M
+        case 2
+            % ?
+        case 4
+            TEB_th(EbN0dB+1) = qfunc(sqrt(2 * 10 ^ (EbN0dB / 10)));
+        case 8
+            % ?
+    end
 end
 %% Affichages
 
@@ -124,25 +136,22 @@ legend('Expérimentale','Théorique')
 
 
 % Constellations en sortie de mapping et en sortie de l'échantilloneur (PARTIE 3)
-figure("Name", "Position des échantillons");
-plot(symboles, 'o', "MarkerFaceColor", [0.7 0 1]);
-hold on
-plot(echantilloned, 'o', "MarkerFaceColor", [0 0.7 0.7]);
-hold off
-legend('Après mapping','Après échantillonage')
-
-% C PAS NORMAL ON EST TROP FORTS ???
-
+% figure("Name", "Position des échantillons");
+% plot(symboles, 'o', "MarkerFaceColor", [0.7 0 1]);
+% hold on
+% plot(echantilloned, 'o', "MarkerFaceColor", [0 0.7 0.7]);
+% hold off
+% legend('Après mapping','Après échantillonage')
 
 % figure("Name", "Diagramme de l'oeil du signal en sortie")
 % tiledlayout(2, 1)
 % nexttile
-% plot(reshape(real(y), Ns, length(y((1+length(h)):end)) / Ns));
+% plot(reshape(real(y((1+length(h)):end)), Ns, []));
 % xlabel("Nb échantillons (s)");
 % ylabel("Amplitude");
 % title("Voie en phase du signal")
 % nexttile
-% plot(reshape(imag(y), Ns, length(y) / Ns));
+% plot(reshape(imag(y((1+length(h)):end)), Ns, []));
 % xlabel("Nb échantillons (s)");
 % ylabel("Amplitude");
 % title("Voie en quadrature du signal")
