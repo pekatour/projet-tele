@@ -5,7 +5,7 @@ close all; clc;
 %% Paramètres
 Fe = 24000; % Fréquence d’échantillonnage
 Rb = 3000; % Débit binaire
-EbN0dB = 20; % Niveau de Eb/N0 souhaitée en dB
+EbN0dB = 3; % Niveau de Eb/N0 souhaitée en dB
 M = 4; % Ordre de la modulation
 fp = 2000; % Fréquence porteuse
 Te = 1 / Fe; % Période d’échantillonnage
@@ -83,10 +83,10 @@ title("DSP du signal transmis");
 % cf formule cours ( 1/4 * (S(-f-fp) + (S(f-fp)))
 
 %% Canal awng
-% Px = mean(abs(x) .^ 2); % Calcul de la puissance du signal transmis
-% Pn = Px * Ns / (2 * log2(M) * 10 ^ (EbN0dB / 10)); % Calcul de la puissance du bruite à introduire pour travailler au niveau de Eb N0 souhaité
-% n = sqrt(Pn) * randn(1, length(x)); % Génération du bruit
-% r = x + n; % Ajout du bruit
+Px = mean(abs(x) .^ 2); % Calcul de la puissance du signal transmis
+Pn = Px * Ns / (2 * log2(M) * 10 ^ (EbN0dB / 10)); % Calcul de la puissance du bruite à introduire pour travailler au niveau de Eb N0 souhaité
+n = sqrt(Pn) * randn(1, length(x)); % Génération du bruit
+r = x + n; % Ajout du bruit
 
 %% Réception
 % z = filter(hr, 1, r .* cos(2 * pi * fp * [0:Te:(length(r) - 1) * Te])); % Retour en bande de base avec filtrage passe-bas = filtre adapté
@@ -100,7 +100,7 @@ title("DSP du signal transmis");
 % WN = [(fp - BW/2) (fp + BW/2)]/(Fe/2);
 % h_pc = fir1(N, WN, 'bandpass');
 % z = filter(h_pc, 1, r); % Retour en bande de base avec filtrage passe-bas = filtre adapté
-z = x; % tkt on est seul au monde
+z = r; % tkt on est seul au monde
 
 % Multiplication par cosinus / sinus
 z_cos = z .* cos(2 * pi * fp * t);
