@@ -8,7 +8,7 @@ fp = 2000; % Fréquence porteuse
 Te = 1 / Fe; % Période d’échantillonnage
 Rs = Rb / log2(M); % Débit symbole
 Ns = Fe / Rs; % Facteur de sur échantillonnage
-nbits = 1000 * log2(M); % Nombre de bits à transmettre
+nbits = 3000 * log2(M); % Nombre de bits à transmettre
 
 rolloff = 0.35; % Roll-off du filtre de mise en forme
 span = 20; % Durée du filtre en symboles de base
@@ -80,8 +80,7 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     demapped = reshape(demapped, 1, length(demapped));
     TEB_xp(EbN0dB+1) = mean(bits ~= demapped);
     % TEB_xp(EbN0dB+1)
-    TEB_th(EbN0dB+1) = 2 * ((M-1)/M) * ...
-        qfunc(sqrt((6 * log2(M) * 10 ^ (EbN0dB / 10))/(M^2 - 1)));
+    TEB_th(EbN0dB+1) = qfunc(sqrt(2 * 10 ^ (EbN0dB / 10)));
 end
 %% Affichages
 
@@ -116,10 +115,10 @@ title("DSP du signal transmis");
 
 % Affichage de la TEB expérimentale vs. la TEB théorique
 figure("Name", "TEB expérimentale et TEB théorique");
-plot(TEB_xp);
+semilogy(TEB_xp);
 hold on;
 % TEB théorique calculée avec formule cours : Nyquist + adapté + seuil en 0 (?)
-plot(TEB_th);
+semilogy(TEB_th);
 hold off;
 legend('Expérimentale','Théorique')
 
