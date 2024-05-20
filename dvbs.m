@@ -3,13 +3,12 @@ close all; clc;
 %% Paramètres
 Fe = 24000; % Fréquence d’échantillonnage
 Rb = 3000; % Débit binaire
-EbN0dB = 20; % Niveau de Eb/N0 souhaitée en dB
 M = 4; % Ordre de la modulation
 fp = 2000; % Fréquence porteuse
 Te = 1 / Fe; % Période d’échantillonnage
 Rs = Rb / log2(M); % Débit symbole
 Ns = Fe / Rs; % Facteur de sur échantillonnage
-nbits = 100 * log2(M); % Nombre de bits à transmettre
+nbits = 1000 * log2(M); % Nombre de bits à transmettre
 
 rolloff = 0.35; % Roll-off du filtre de mise en forme
 span = 20; % Durée du filtre en symboles de base
@@ -29,55 +28,61 @@ xe = filter(h, 1, [diracs zeros(1, length(h))]); % Filtrage de mise en forme (g�
 t = 0:Te:(length(xe) - 1) * Te;
 x = real(xe .* exp(1i * 2 * pi * fp * t));
 
-%% Canal awng
-Px = mean(abs(x) .^ 2); % Calcul de la puissance du signal transmis
-Pn = Px * Ns / (2 * log2(M) * 10 ^ (EbN0dB / 10)); % Calcul de la puissance du bruite à introduire pour travailler au niveau de Eb N0 souhaité
-n = sqrt(Pn) * randn(1, length(x)); % Génération du bruit
-r = x + n; % Ajout du bruit
 
-%% Retour en bande de base
-% z = filter(hr, 1, r .* cos(2 * pi * fp * [0:Te:(length(r) - 1) * Te])); % Retour en bande de base avec filtrage passe-bas = filtre adapté
-% n0 = Ns; % Choix de l’instant d’échantillonnage.
-% zm = z(n0:Ns:end); % Echantillonnage à n0+mNs
-% am = sign(real(zm)); % Décisions sur les symboles
-% bm = (am + 1) / 2; % Demapping
+TEB_xp = zeros(1,6);
+TEB_th = zeros(1,6);
+for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
+    %% Canal awng
+    Px = mean(abs(x) .^ 2); % Calcul de la puissance du signal transmis
+    Pn = Px * Ns / (2 * log2(M) * 10 ^ (EbN0dB / 10)); % Calcul de la puissance du bruite à introduire pour travailler au niveau de Eb N0 souhaité
+    n = sqrt(Pn) * randn(1, length(x)); % Génération du bruit
+    r = x + n; % Ajout du bruit
 
-% BW = 2 * fp; % Taille du filtre passe-bas
-% N = 101; % Ordre du filtre passe-bas
-% WN = [(fp - BW/2) (fp + BW/2)]/(Fe/2);
-% h_pc = fir1(N, WN, 'bandpass');
-% z = filter(h_pc, 1, r); % Retour en bande de base avec filtrage passe-bas = filtre adapté
+    %% Retour en bande de base
+    % z = filter(hr, 1, r .* cos(2 * pi * fp * [0:Te:(length(r) - 1) * Te])); % Retour en bande de base avec filtrage passe-bas = filtre adapté
+    % n0 = Ns; % Choix de l’instant d’échantillonnage.
+    % zm = z(n0:Ns:end); % Echantillonnage à n0+mNs
+    % am = sign(real(zm)); % Décisions sur les symboles
+    % bm = (am + 1) / 2; % Demapping
 
-z = r; % On ne fait pas ce filtre car nous sommes seuls sur le canal de transmission
+    % BW = 2 * fp; % Taille du filtre passe-bas
+    % N = 101; % Ordre du filtre passe-bas
+    % WN = [(fp - BW/2) (fp + BW/2)]/(Fe/2);
+    % h_pc = fir1(N, WN, 'bandpass');
+    % z = filter(h_pc, 1, r); % Retour en bande de base avec filtrage passe-bas = filtre adapté
 
-% Multiplication par cosinus / sinus
-z_cos = z .* cos(2 * pi * fp * t);
-z_sin = z .* sin(2 * pi * fp * t);
+    z = r; % On ne fait pas ce filtre car nous sommes seuls sur le canal de transmission
 
-% Filtrage passe-bas
-BW = 1 * fp;
-z_cos = lowpass(z_cos, BW, Fe);
-z_sin = lowpass(z_sin, BW, Fe);
+    % Multiplication par cosinus / sinus
+    z_cos = z .* cos(2 * pi * fp * t);
+    z_sin = z .* sin(2 * pi * fp * t);
 
-% Combinaison des deux voies
-z_f = z_cos - 1i * z_sin;
+    % Filtrage passe-bas
+    BW = 1 * fp;
+    z_cos = lowpass(z_cos, BW, Fe);
+    z_sin = lowpass(z_sin, BW, Fe);
 
-%% Démodulation bande de base
-y = filter(hr, 1, z_f);
+    % Combinaison des deux voies
+    z_f = z_cos - 1i * z_sin;
 
-% échantillonage
-N0 = 1 + length(h); % Instant d'échantillonage
-echantilloned = y(N0:Ns:length(y));
+    %% Démodulation bande de base
+    y = filter(hr, 1, z_f);
 
-% Décisions
-detected = decisionsPSK(echantilloned, M);
+    % échantillonage
+    N0 = 1 + length(h); % Instant d'échantillonage
+    echantilloned = y(N0:Ns:length(y));
 
-% Demapping
-demapped = int2bit(detected, log2(M));
-demapped = reshape(demapped, 1, length(demapped));
-TEB = mean(bits ~= demapped)
+    % Décisions
+    detected = decisionsPSK(echantilloned, M);
 
-
+    % Demapping
+    demapped = int2bit(detected, log2(M));
+    demapped = reshape(demapped, 1, length(demapped));
+    TEB_xp(EbN0dB+1) = mean(bits ~= demapped);
+    % TEB_xp(EbN0dB+1)
+    TEB_th(EbN0dB+1) = 2 * ((M-1)/M) * ...
+        qfunc(sqrt((6 * log2(M) * 10 ^ (EbN0dB / 10))/(M^2 - 1)));
+end
 %% Affichages
 
 % Affichage des voies en phase et quadrature après filtrage de mise en forme
@@ -109,13 +114,26 @@ title("DSP du signal transmis");
 % mettre sur porteuse décale le spectre initialisement modulé en bande de base
 % cf formule cours ( 1/4 * (S(-f-fp) + (S(f-fp)))
 
-% Constellations en sortie de mapping et en sortie de l'échantilloneur
+% Affichage de la TEB expérimentale vs. la TEB théorique
+figure("Name", "TEB expérimentale et TEB théorique");
+plot(TEB_xp);
+hold on;
+% TEB théorique calculée avec formule cours : Nyquist + adapté + seuil en 0 (?)
+plot(TEB_th);
+hold off;
+legend('Expérimentale','Théorique')
+
+
+% Constellations en sortie de mapping et en sortie de l'échantilloneur (PARTIE 3)
 figure("Name", "Position des échantillons");
 plot(symboles, 'o', "MarkerFaceColor", [0.7 0 1]);
 hold on
 plot(echantilloned, 'o', "MarkerFaceColor", [0 0.7 0.7]);
 hold off
 legend('Après mapping','Après échantillonage')
+
+% C PAS NORMAL ON EST TROP FORTS ???
+
 
 % figure("Name", "Diagramme de l'oeil du signal en sortie")
 % tiledlayout(2, 1)
