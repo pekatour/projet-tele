@@ -8,7 +8,7 @@ M = 4; % Ordre de la modulation
 Te = 1 / Fe; % Période d’échantillonnage
 Rs = Rb / log2(M); % Débit symbole
 Ns = Fe / Rs; % Facteur de sur échantillonnage
-nbits = 3000 * log2(M); % Nombre de bits à transmettre
+nbits = 6000 * log2(M); % Nombre de bits à transmettre
 
 rolloff = 0.35; % Roll-off du filtre de mise en forme
 span = 20; % Durée du filtre en symboles de base
@@ -25,11 +25,10 @@ symboles = mappingPSK(bits,M);
 
 % Diracs
 diracs = kron(symboles, [1 zeros(1,Ns-1)]); % Suréchantillonnage des symboles
-xe = filter(h, 1, [diracs zeros(1, length(h))]); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
+xe = filter(h, 1, [diracs zeros(1, (length(h)+1)/2)]); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
 t = 0:Te:(length(xe) - 1) * Te;
 Be = ((1+rolloff)/2)*Rs;
 % x = real(xe .* exp(1i * 2 * pi * fp * t)); 
-
 
 TEB_xp = zeros(1,6);
 for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
@@ -45,11 +44,11 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     z = xc + nI + 1i * nQ; % Ajout du bruit
 
     %% Démodulation bande de base
-    hr = fliplr(conv(h,he)); % Ne marche pas : he pas de type matrice
-    y = filter(hr, 1, z);
+    hr = fliplr(conv(h,impz(he)));
+    y = filter(hr, 1, [z zeros(1, (length(hr)+1)/2)]);
 
     % échantillonage
-    N0 = 1 + length(h); % Instant d'échantillonage
+    N0 = 1 + (length(h)+1)/2 + (length(hr)+1)/2; % Instant d'échantillonage
     echantilloned = y(N0:Ns:length(y));
 
     % Décisions
@@ -64,6 +63,7 @@ end
 %% Affichages
 
 % Affichage des voies en phase et quadrature après filtrage de mise en forme
+figure;
 tiledlayout(2, 1)
 nexttile
 plot(t, real(xe));
