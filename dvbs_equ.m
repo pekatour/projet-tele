@@ -8,7 +8,7 @@ M = 4; % Ordre de la modulation
 Te = 1 / Fe; % Période d’échantillonnage
 Rs = Rb / log2(M); % Débit symbole
 Ns = Fe / Rs; % Facteur de sur échantillonnage
-nbits = 100 * log2(M); % Nombre de bits à transmettre
+nbits = 10000 * log2(M); % Nombre de bits à transmettre
 
 rolloff = 0.35; % Roll-off du filtre de mise en forme
 span = 20; % Durée du filtre en symboles de base
@@ -31,6 +31,7 @@ Be = ((1+rolloff)/2)*Rs;
 % x = real(xe .* exp(1i * 2 * pi * fp * t)); 
 
 TEB_xp = zeros(1,6);
+TEB_th = zeros(1,6);
 figure("Name", "Position des échantillons après mapping et échantilloneur");
 tiledlayout(3, 2)
 for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
@@ -73,6 +74,14 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
         title("Eb/N0 =" + EbN0dB + "dB")
         legend('Après mapping','Après échantillonage')
     end
+    switch M
+        case 2
+            % ?
+        case 4
+            TEB_th(EbN0dB+1) = qfunc(sqrt(2 * 10 ^ (EbN0dB / 10)));
+        case 8
+            % ?
+    end
 end
 %% Affichages
 
@@ -102,6 +111,11 @@ title("DSP du signal transmis");
 % Affichage de la TEB expérimentale vs. la TEB théorique
 figure("Name", "TEB expérimentale");
 semilogy(TEB_xp);
+hold on;
+% TEB théorique calculée avec formule cours : Nyquist + adapté + seuil en 0 (?)
+semilogy(TEB_th);
+hold off;
+legend('Expérimentale','Théorique')
 
 % figure("Name", "Diagramme de l'oeil du signal en sortie")
 % tiledlayout(2, 1)

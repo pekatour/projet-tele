@@ -8,7 +8,7 @@ M = 4; % Ordre de la modulation
 Te = 1 / Fe; % Période d’échantillonnage
 Rs = Rb / log2(M); % Débit symbole
 Ns = Fe / Rs; % Facteur de sur échantillonnage
-nbits = 100 * log2(M); % Nombre de bits à transmettre
+nbits = 10000 * log2(M); % Nombre de bits à transmettre
 
 rolloff = 0.35; % Roll-off du filtre de mise en forme
 span = 20; % Durée du filtre en symboles de base
@@ -19,17 +19,21 @@ bits = randi([0, 1], 1, nbits); % Génération de l’information binaire
 h = rcosdesign(rolloff, span, Ns); % Génération de la réponse impulsionnelle du filtre de mise en forme
 hr = fliplr(h); % Génération de la réponse impulsionnelle du filtre de réception (filtrage adaptée)
 
-%% Mapping PSK
-symboles = pammod(bits,M);
+%% Mapping ASK
+b = reshape(bits, log2(M), length(bits) / log2(M)); % Groupement des bits par paquets de log2(M) bits
+b = bit2int(b, log2(M)); % Conversion des bits groupés en entiers
+symboles = pammod(b,M);
 
 % Diracs
 diracs = kron(symboles, [1 zeros(1,Ns-1)]); % Suréchantillonnage des symboles
-xe = filter(h, 1, [diracs zeros(1, length(h))]); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
+xe = filter(h, 1, [diracs zeros(1, length(h)-1)]); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
+xe = xe(length(h) : end);
 t = 0:Te:(length(xe) - 1) * Te;
 Be = ((1+rolloff)/2)*Rs;
 % x = real(xe .* exp(1i * 2 * pi * fp * t));  
 
 TEB_xp = zeros(1,6);
+TEB_th = zeros(1,6);
 figure("Name", "Position des échantillons après mapping et échantilloneur");
 tiledlayout(3, 2)
 for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
@@ -50,7 +54,7 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     y = filter(hr, 1, z);
 
     % échantillonage
-    N0 = 1 + length(h); % Instant d'échantillonage
+    N0 = 1; % Instant d'échantillonage
     echantilloned = y(N0:Ns:length(y));
 
     % Décisions
@@ -58,7 +62,7 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
 
     % Demapping
     demapped = int2bit(detected, log2(M));
-    demapped = reshape(demapped, 1, length(demapped));
+    demapped = reshape(demapped, 1, []);
     TEB_xp(EbN0dB+1) = mean(bits ~= demapped);
     % TEB_xp(EbN0dB+1)
 
@@ -71,6 +75,15 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
         hold off
         title("Eb/N0 =" + EbN0dB + "dB")
         legend('Après mapping','Après échantillonage')
+    end
+    switch M
+        case 2
+            % ?
+        case 4
+            TEB_th(EbN0dB+1) = 2 * (1 - 1/M) * ...
+            qfunc(sqrt((6 * log2(M) * 10 ^ (EbN0dB / 10)/(M^2 - 1))));
+        case 8
+            % ?
     end
 end
 %% Affichages
@@ -100,6 +113,11 @@ end
 % Affichage de la TEB expérimentale vs. la TEB théorique
 figure("Name", "TEB expérimentale");
 semilogy(TEB_xp);
+hold on;
+% TEB théorique calculée avec formule cours : Nyquist + adapté + seuil en 0 (?)
+semilogy(TEB_th);
+hold off;
+legend('Expérimentale','Théorique')
 
 % figure("Name", "Diagramme de l'oeil du signal en sortie")
 % tiledlayout(2, 1)
