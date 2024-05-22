@@ -8,7 +8,7 @@ M = 4; % Ordre de la modulation
 Te = 1 / Fe; % Période d’échantillonnage
 Rs = Rb / log2(M); % Débit symbole
 Ns = Fe / Rs; % Facteur de sur échantillonnage
-nbits = 6000 * log2(M); % Nombre de bits à transmettre
+nbits = 100 * log2(M); % Nombre de bits à transmettre
 
 rolloff = 0.35; % Roll-off du filtre de mise en forme
 span = 20; % Durée du filtre en symboles de base
@@ -19,7 +19,6 @@ bits = randi([0, 1], 1, nbits); % Génération de l’information binaire
 h = rcosdesign(rolloff, span, Ns); % Génération de la réponse impulsionnelle du filtre de mise en forme
 % he = 0 ; % Filtre du canal de la chaîne passe-bas équivalent
 % hr = fliplr(h); % Génération de la réponse impulsionnelle du filtre de réception (filtrage adaptée)
-
 %% Mapping PSK
 symboles = mappingPSK(bits,M);
 
@@ -34,13 +33,14 @@ TEB_xp = zeros(1,6);
 for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     %% Canal Passe-Bas Equivalent
     % Filtrage passe-bas
-    [xc, he] = lowpass(xe, Be, Fe); % he est le filtre utilisé pour filtrer
+    he = fir1(length(h)-1, (Be*2)/Fe, "low");  % filtre passe bas de même ordre que h
+    xc = filter(he, 1, [xe zeros(1, (length(he)+1)/2)]);
 
     % Ajout bruit
     Px = mean(abs(xe) .^ 2); % Calcul de la puissance du signal transmis
     Pn = Px * Ns / (2 * log2(M) * 10 ^ (EbN0dB / 10)); % Calcul de la puissance du bruit à introduire pour travailler au niveau de Eb N0 souhaité
-    nI = sqrt(Pn) * randn(1, length(xe)); % Génération du bruit réel
-    nQ = sqrt(Pn) * randn(1, length(xe)); % Génération du bruit complexe
+    nI = sqrt(Pn) * randn(1, length(xc)); % Génération du bruit réel
+    nQ = sqrt(Pn) * randn(1, length(xc)); % Génération du bruit complexe
     z = xc + nI + 1i * nQ; % Ajout du bruit
 
     %% Démodulation bande de base
@@ -48,7 +48,7 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     y = filter(hr, 1, [z zeros(1, (length(hr)+1)/2)]);
 
     % échantillonage
-    N0 = 1 + (length(h)+1)/2 + (length(hr)+1)/2; % Instant d'échantillonage
+    N0 = 1 + (length(h)+1)/2 + (length(hr)+1)/2 + (length(he)+1)/2; % Instant d'échantillonage
     echantilloned = y(N0:Ns:length(y));
 
     % Décisions
