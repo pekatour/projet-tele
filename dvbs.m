@@ -8,7 +8,7 @@ fp = 2000; % Fréquence porteuse
 Te = 1 / Fe; % Période d’échantillonnage
 Rs = Rb / log2(M); % Débit symbole
 Ns = Fe / Rs; % Facteur de sur échantillonnage
-nbits = 3000 * log2(M); % Nombre de bits à transmettre
+nbits = 10000 * log2(M); % Nombre de bits à transmettre
 
 rolloff = 0.35; % Roll-off du filtre de mise en forme
 span = 20; % Durée du filtre en symboles de base

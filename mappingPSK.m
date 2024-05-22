@@ -12,6 +12,7 @@ function symboles = mappingPSK(bits,M)
             symboles(b == 1) = -1 + 1i;
             symboles(b == 2) = 1 - 1i;
             symboles(b == 3) = -1 - 1i;
+            symboles = symboles / sqrt(2);
         case 8
             symboles(b == 0) = exp(1i * pi / 8);
             symboles(b == 1) = exp(3i * pi / 8);
