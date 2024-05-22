@@ -8,7 +8,7 @@ M = 4; % Ordre de la modulation
 Te = 1 / Fe; % Période d’échantillonnage
 Rs = Rb / log2(M); % Débit symbole
 Ns = Fe / Rs; % Facteur de sur échantillonnage
-nbits = 10000 * log2(M); % Nombre de bits à transmettre
+nbits = 100 * log2(M); % Nombre de bits à transmettre
 
 rolloff = 0.35; % Roll-off du filtre de mise en forme
 span = 20; % Durée du filtre en symboles de base
@@ -24,7 +24,8 @@ symboles = mappingPSK(bits,M);
 
 % Diracs
 diracs = kron(symboles, [1 zeros(1,Ns-1)]); % Suréchantillonnage des symboles
-xe = filter(h, 1, [diracs zeros(1, length(h))]); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
+xe = filter(h, 1, [diracs zeros(1, length(h)-1)]); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
+xe = xe(length(h) : end);
 t = 0:Te:(length(xe) - 1) * Te;
 Be = ((1+rolloff)/2)*Rs;
 % x = real(xe .* exp(1i * 2 * pi * fp * t)); 
@@ -50,7 +51,7 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     y = filter(hr, 1, z);
 
     % échantillonage
-    N0 = 1 + length(h); % Instant d'échantillonage
+    N0 = 1; % Instant d'échantillonage
     echantilloned = y(N0:Ns:length(y));
 
     % Décisions
