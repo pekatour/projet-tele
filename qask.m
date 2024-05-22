@@ -22,7 +22,7 @@ hr = fliplr(h); % Génération de la réponse impulsionnelle du filtre de récep
 %% Mapping ASK
 b = reshape(bits, log2(M), length(bits) / log2(M)); % Groupement des bits par paquets de log2(M) bits
 b = bit2int(b, log2(M)); % Conversion des bits groupés en entiers
-symboles = pammod(b,M);
+symboles = pammod(b,M,[], 'gray');
 
 % Diracs
 diracs = kron(symboles, [1 zeros(1,Ns-1)]); % Suréchantillonnage des symboles
@@ -58,7 +58,7 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     echantilloned = y(N0:Ns:length(y));
 
     % Décisions
-    detected = pamdemod(echantilloned, M);
+    detected = pamdemod(echantilloned, M, [], 'gray');
 
     % Demapping
     demapped = int2bit(detected, log2(M));
@@ -80,7 +80,7 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
         case 2
             % ?
         case 4
-            TEB_th(EbN0dB+1) = 2 * (1 - 1/M) * ...
+            TEB_th(EbN0dB+1) = ( 2 / log2(M) ) * (1 - 1/M) * ...
             qfunc(sqrt((6 * log2(M) * 10 ^ (EbN0dB / 10)/(M^2 - 1))));
         case 8
             % ?
