@@ -1,3 +1,4 @@
+function [DSP,f,TEB_xp]= qask()
 close all; clc;
 
 %% Paramètres
@@ -69,9 +70,9 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     %% Affichage constellations en sortie de mapping et en sortie de l'échantilloneur
     if (EbN0dB > 0)
         nexttile
-        plot(symboles, 'o', "MarkerFaceColor", [0.7 0 1]);
+        plot(symboles, 'O', "MarkerFaceColor", [0 0.7 0.7], 'MarkerSize', 15);
         hold on
-        plot(echantilloned, 'o', "MarkerFaceColor", [0 0.7 0.7]);
+        plot(echantilloned, '.', "Color",[0.7 0 0.7] );
         hold off
         title("Eb/N0 =" + EbN0dB + "dB")
         legend('Après mapping','Après échantillonage')
@@ -86,6 +87,10 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
             % ?
     end
 end
+
+% DSP de xe
+[DSP, f] = pwelch(xe, [], [], [], Fe, 'centered');
+
 %% Affichages
 
 % Affichage des voies en phase et quadrature après filtrage de mise en forme
@@ -131,3 +136,5 @@ legend('Expérimentale','Théorique')
 % xlabel("Nb échantillons (s)");
 % ylabel("Amplitude");
 % title("Voie en quadrature du signal")
+
+end

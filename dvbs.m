@@ -134,15 +134,6 @@ semilogy(TEB_th);
 hold off;
 legend('Expérimentale','Théorique')
 
-
-% Constellations en sortie de mapping et en sortie de l'échantilloneur (PARTIE 3)
-% figure("Name", "Position des échantillons");
-% plot(symboles, 'o', "MarkerFaceColor", [0.7 0 1]);
-% hold on
-% plot(echantilloned, 'o', "MarkerFaceColor", [0 0.7 0.7]);
-% hold off
-% legend('Après mapping','Après échantillonage')
-
 % figure("Name", "Diagramme de l'oeil du signal en sortie")
 % tiledlayout(2, 1)
 % nexttile
