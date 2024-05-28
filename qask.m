@@ -71,9 +71,9 @@ function [DSP, f, TEB_xp] = qask()
         %% Affichage constellations en sortie de mapping et en sortie de l'échantilloneur
         if (EbN0dB > 0)
             nexttile
-            plot(symboles, 'O', "MarkerFaceColor", [0 0.7 0.7], 'MarkerSize', 15);
-            hold on
             plot(echantilloned, '.', "Color", [0.7 0 0.7]);
+            hold on
+            plot(symboles, 'O', "MarkerFaceColor", [0 0.7 0.7], 'MarkerSize', 15);
             hold off
             title("Eb/N0 =" + EbN0dB + "dB")
             legend('Après mapping', 'Après échantillonage')
@@ -126,6 +126,8 @@ function [DSP, f, TEB_xp] = qask()
     semilogy(TEB_th);
     hold off;
     legend('Expérimentale', 'Théorique')
+    xlabel("Eb/N0 (dB)");
+    ylabel("TEB");
 
     % figure("Name", "Diagramme de l'oeil du signal en sortie")
     % tiledlayout(2, 1)
