@@ -4,9 +4,9 @@
 close all; clc;
 
 figure;
-semilogy(TEB_xpA);
+semilogy(0:1:6, TEB_xpA);
 hold on;
-semilogy(TEB_xpB);
+semilogy(0:1:6, TEB_xpB);
 hold off;
 legend('TEB DVBS', 'TEB DVBS2')
 % title("Comparaison des TEB")

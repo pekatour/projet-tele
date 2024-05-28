@@ -4,9 +4,9 @@
 close all; clc;
 
 figure;
-semilogy(TEB_xpA);
+semilogy(0:1:6, TEB_xpA);
 hold on;
-semilogy(TEB_xpB);
+semilogy(0:1:6, TEB_xpB);
 hold off;
 legend('TEB 4-ASK', 'TEB QPSK')
 % title("Comparaison des TEB")

@@ -129,10 +129,10 @@ ylabel("DSP (dB)");
 
 % Affichage de la TEB expérimentale vs. la TEB théorique
 figure("Name", "TEB expérimentale et TEB théorique");
-semilogy(TEB_xp);
+semilogy(0:1:6, TEB_xp);
 hold on;
 % TEB théorique calculée avec formule cours : Nyquist + adapté + seuil en 0 (?)
-semilogy(TEB_th);
+semilogy(0:1:6, TEB_th);
 hold off;
 legend('Expérimentale', 'Théorique')
 xlabel("Eb/N0 (dB)");
