@@ -83,7 +83,7 @@ function [DSP, f, TEB_xp] = dvb2()
             case 4
                 TEB_th(EbN0dB + 1) = qfunc(sqrt(2 * 10 ^ (EbN0dB / 10)));
             case 8
-                TEB_th(EbN0dB + 1) = (2/3) * qfunc(sqrt(6 * (10 ^ (EbN0dB / 10))) * sin(pi / M)); % wikipedia
+                TEB_th(EbN0dB + 1) = (2/log2(M)) * qfunc(sqrt(6 * (10 ^ (EbN0dB / 10))) * sin(pi / M)); % wikipedia
         end
 
     end
