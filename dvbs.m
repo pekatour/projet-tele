@@ -133,6 +133,8 @@ hold on;
 semilogy(TEB_th);
 hold off;
 legend('Expérimentale','Théorique')
+xlabel("Eb/N0 (dB)");
+ylabel("TEB");
 
 % figure("Name", "Diagramme de l'oeil du signal en sortie")
 % tiledlayout(2, 1)
