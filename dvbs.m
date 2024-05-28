@@ -20,22 +20,22 @@ h = rcosdesign(rolloff, span, Ns); % Génération de la réponse impulsionnelle 
 hr = fliplr(h); % Génération de la réponse impulsionnelle du filtre de réception (filtrage adaptée)
 
 %% Mapping PSK
-symboles = mappingPSK(bits,M);
+symboles = mappingPSK(bits, M);
 
 % Diracs et mise sur porteuse
-diracs = kron(symboles, [1 zeros(1,Ns-1)]); % Suréchantillonnage des symboles
+diracs = kron(symboles, [1 zeros(1, Ns - 1)]); % Suréchantillonnage des symboles
 xe = filter(h, 1, [diracs zeros(1, length(h))]); % Filtrage de mise en forme (génération de l’enveloppe complexe associée au signal à transmettre)
 t = 0:Te:(length(xe) - 1) * Te;
-Be = ((1+rolloff)/2)*Rs;
+Be = ((1 + rolloff) / 2) * Rs;
 x = real(xe .* exp(1i * 2 * pi * fp * t));
 
+TEB_xp = zeros(1, 6);
+TEB_th = zeros(1, 6);
 
-TEB_xp = zeros(1,6);
-TEB_th = zeros(1,6);
-for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
+for EbN0dB = 0:1:6 % Niveau de Eb/N0 souhaitée en dB
     %% Canal awng
     % Filtrage passe-bande
-    xc = bandpass(x,[fp-Be, fp+Be],Fe);
+    xc = bandpass(x, [fp - Be, fp + Be], Fe);
 
     % Ajout bruit
     Px = mean(abs(x) .^ 2); % Calcul de la puissance du signal transmis
@@ -83,17 +83,19 @@ for EbN0dB=0:1:6 % Niveau de Eb/N0 souhaitée en dB
     % Demapping
     demapped = int2bit(detected, log2(M));
     demapped = reshape(demapped, 1, length(demapped));
-    TEB_xp(EbN0dB+1) = mean(bits ~= demapped);
+    TEB_xp(EbN0dB + 1) = mean(bits ~= demapped);
     % TEB_xp(EbN0dB+1)
     switch M
         case 2
             % ?
         case 4
-            TEB_th(EbN0dB+1) = qfunc(sqrt(2 * 10 ^ (EbN0dB / 10)));
+            TEB_th(EbN0dB + 1) = qfunc(sqrt(2 * 10 ^ (EbN0dB / 10)));
         case 8
             % ?
     end
+
 end
+
 %% Affichages
 
 % Affichage des voies en phase et quadrature après filtrage de mise en forme
@@ -120,7 +122,7 @@ figure("Name", "DSP du signal transmis");
 semilogy(f, abs(DSP));
 xlabel("Fréquence (Hz)");
 ylabel("DSP (dB)");
-title("DSP du signal transmis");
+% title("DSP du signal transmis");
 % Spectre avec deux bandes centrées en +fp et -fp, cohérent avec la théorie :
 % mettre sur porteuse décale le spectre initialisement modulé en bande de base
 % cf formule cours ( 1/4 * (S(-f-fp) + (S(f-fp)))
@@ -132,7 +134,7 @@ hold on;
 % TEB théorique calculée avec formule cours : Nyquist + adapté + seuil en 0 (?)
 semilogy(TEB_th);
 hold off;
-legend('Expérimentale','Théorique')
+legend('Expérimentale', 'Théorique')
 xlabel("Eb/N0 (dB)");
 ylabel("TEB");
 

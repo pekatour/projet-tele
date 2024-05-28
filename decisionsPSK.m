@@ -1,5 +1,6 @@
-function detected = decisionsPSK(echantilloned,M)
+function detected = decisionsPSK(echantilloned, M)
     detected = zeros(length(echantilloned), 1);
+
     switch M
         case 2
             detected(real(echantilloned) > 0) = 1;
@@ -17,6 +18,7 @@ function detected = decisionsPSK(echantilloned,M)
             detected(angle(echantilloned) > -pi & angle(echantilloned) <= -3 * pi / 4) = 6;
             detected(angle(echantilloned) > -3 * pi / 4 & angle(echantilloned) <= -pi / 2) = 7;
             detected(angle(echantilloned) > -pi / 2 & angle(echantilloned) <= -pi / 4) = 5;
-            detected(angle(echantilloned) > -pi / 4 & angle(echantilloned) <= 0) = 4;        
+            detected(angle(echantilloned) > -pi / 4 & angle(echantilloned) <= 0) = 4;
     end
+
 end
