@@ -76,7 +76,7 @@ function [DSP, f, TEB_xp] = qask()
             plot(symboles, 'O', "MarkerFaceColor", [0 0.7 0.7], 'MarkerSize', 15);
             hold off
             title("Eb/N0 =" + EbN0dB + "dB")
-            legend('Après mapping', 'Après échantillonage')
+            legend('Après échantillonage', 'Après mapping')
         end
 
         switch M
